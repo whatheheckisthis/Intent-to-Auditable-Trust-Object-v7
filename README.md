@@ -1,6 +1,6 @@
 # Intent-to-Auditable-Trust-Object (IATO-V7)
 
-From the terminal: host-path auditing, reproducible XML artifacts, and traceable JBoss EAP 7 migration across SOC environments.
+From the terminal: host-path, reproducible XML artifacts, and traceable JBoss EAP 7 migration across SOC environments.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)](lean/iato_v7/lakefile.lean)
 [![Essential%208](https://img.shields.io/badge/Essential%208-ML4-blue)](docs/cyber-risk-controls.md)
