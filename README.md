@@ -57,7 +57,7 @@ Automation Focus:
 - Application control through verification and migration gating.
 - Patch compatibility checks for legacy worker migration inputs.
 
-## Verified Architecture
+## Verified Architecture:
 
 ```text
 lean/iato_v7/IATO/V7/
@@ -74,22 +74,25 @@ docs/ARCHITECTURE.md
   docs/WORKER_COMPAT.md  # Audit and implementation narrative
 ```
 
-## IĀTŌ‑V7 Orchestration 
+## Orchestration: 
 
-### 1) Purpose
-The IĀTŌ-v7 orchestration layer is a deterministic execution wrapper that converts a repository config.toml manifests into a canonical Nmap XML audit artifact for host-path filesystem assurance.
-Out of bounds for standard endpoint security agents (no persistent monitoring, behavioral analysis, or runtime telemetry), it remains highly applicable when parsing its output for integrity correlation in regulated endpoints, particularly in environments where F5 BIG-IP Access Policy Manager (APM) is deployed as the front-end gateway. BIG-IP APM performs client-side endpoint posture and integrity checks (e.g., antivirus/firewall presence, file/process/registry validation, device identifiers) during access policy enforcement, but lacks deep, declarative host-path filesystem scanning on backend Linux servers (such as those running JBoss EAP 7). complements this by providing formal, deterministic file/permissions/content verification on those hosts; its structured XML can be parsed and correlated with BIG-IP APM session logs or endpoint inspection results to build layered, auditable integrity evidence across the application delivery path (edge posture → backend filesystem state) for compliance frameworks like Essential Eight, ISM, or SOC 2. It is optimized for WSL2/Minikube environments where metadata-heavy scans can amplify 9P I/O latency.
+| **Category**                 | **Description / Functionality**                                                                                                                                 | **Integration / Complement**                                                                                                                                                    | **Target Environment / Notes**                                                                      |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Orchestration Layer**      | IĀTŌ-v7 acts as a deterministic execution wrapper. Converts `config.toml` manifests into canonical Nmap XML audit artifacts for host-path filesystem assurance. | Generates structured, parseable XML outputs suitable for integrity correlation.                                                                                                 | Optimized for WSL2/Minikube environments; reduces impact of metadata-heavy scans on 9P I/O latency. |
+| **Endpoint Security Scope**  | Out-of-bounds for standard agents: no persistent monitoring, behavioral analysis, or runtime telemetry.                                                         | Complements existing endpoint posture tools by providing deterministic filesystem verification.                                                                                 | Targets regulated endpoints where standard agents may be insufficient.                              |
+| **Front-end Integration**    | Works with F5 BIG-IP APM as the access policy enforcement gateway.                                                                                              | BIG-IP APM performs client-side posture checks (antivirus/firewall, file/process/registry validation, device identifiers). IĀTŌ-v7 fills the gap in deep backend host scanning. | Backend Linux servers (e.g., JBoss EAP 7) behind BIG-IP APM.                                        |
+| **Audit & Compliance**       | Produces XML output for deterministic verification. Structured data can be correlated with BIG-IP APM session logs or endpoint inspection results.              | Supports compliance frameworks: Essential Eight, ISM, SOC 2. Enables layered, auditable integrity evidence across the application delivery path (edge → backend filesystem).    | Ensures formal, deterministic file/permissions/content verification for regulated environments.     |
+| **Performance Optimization** | Reduces scan-induced latency by optimizing metadata-heavy filesystem checks.                                                                                    | Works efficiently with virtualized/containerized dev/test environments.                                                                                                         | WSL2 / Minikube recommended for evaluation/testing.                                                 |
 
-This section outlines the target design and implementation expectations for the orchestration layer.
 
-### 2) Design Goals
+### 2) Design Goals:
 - **Deterministic orchestration:** equivalent manifest inputs must produce equivalent command lines, policy payloads, and XML artifact paths.
 - **Audit-only runtime posture:** no network discovery side effects.
 - **In-process validation:** integrity and policy checks are performed by NSE scripts during scan execution.
 - **Operational observability:** per-operation latency accounting is captured for forensic auditability.
 - **Schema-compliant hand-off:** generated XML is validated against the IĀTŌ‑V7 audit schema before acceptance.
 
-### 3) Architecture 
+### 3) Architecture: 
 ```text
 config.toml
    │
@@ -109,96 +112,21 @@ Manifest Parser ──► Deterministic Policy Builder ──► Nmap Command Pl
                                          Clean/Dirty + Process Exit Code
 ```
 
-#### 3.1 Module Responsibilities
-1. **Manifest Parser**
-   - Parse TOML and normalize explicit path targets.
-   - Reject unspecified defaults that can introduce nondeterminism.
-2. **Policy Builder**
-   - Emit a stable, sorted policy structure used by NSE scripts (hash, mode, owner/group constraints, integrity predicates).
-3. **Command Planner**
-   - Build a constrained Nmap command that always includes:
-     - `-Pn -sn` (state isolation / host-discovery bypass)
-     - `-oX <artifact>` (canonical machine-readable output)
-     - explicit NSE script invocation and script-args
-   - Derive timing template (`-T2`..`-T4`) from measured filesystem latency.
-4. **Execution + Telemetry**
-   - Run via `subprocess` or `asyncio`.
-   - Track operation-level latency (manifest load, policy write, scan, XML validation).
-5. **Verification Gate**
-   - Parse XML status fields produced by NSE and enforce Clean/Dirty semantics.
-   - Return non-zero exit on any policy deviation.
+#### 3.1 Module Responsibilities:
 
-### 4) Deterministic Behavior Requirements
-- **Stable ordering:** all configured paths and rules must be lexicographically sorted before policy serialization.
-- **Stable artifact mapping:** XML output path is derived from a deterministic tuple:
-  - `(manifest fingerprint, target root, schema version)`.
-- **Stable invocation:** command argument order must be fixed.
-- **Stable environment:** pin Nmap version and disallow mutable runtime options that alter scan semantics.
-
-### 5) Nmap / NSE Contract
-#### 5.1 Mandatory Nmap Flags
-- `-Pn -sn`: enforce local audit mode and skip ping/host discovery behavior.
-- `-oX <path>`: emit canonical XML artifact.
-- `--script <path_audit.nse>`: execute IĀTŌ‑V7 integrity checks in-process.
-- `--script-args ...`: pass root path, policy file, schema version, project metadata.
-
-#### 5.2 NSE Script Duties
-Custom Lua NSE scripts are authoritative for:
-- cryptographic hash checks,
-- ownership and permission checks,
-- structural integrity predicates,
-- producing machine-readable `Clean` or `Dirty` status in XML.
-
-Any mismatch (hash, ACL/mode/ownership, forbidden mutation) must set a failing status consumable by the orchestrator.
-
-### 6) Timing & I/O Strategy (WSL2/9P-Aware)
-- Run a short, bounded I/O latency probe at startup (sample reads/stats on configured target paths).
-- Map probe results to Nmap timing template:
-  - low latency → `-T4`,
-  - medium latency → `-T3`,
-  - high latency / 9P contention → `-T2`.
-- Never exceed bounded scan scope:
-  - **no unbounded recursive DFS traversal**,
-  - only explicit manifest target paths and rule entries.
-
-### 7) Progress and Latency Telemetry
-The orchestrator must asynchronously emit progress records with operation timestamps and durations, for example:
-- `manifest.parse.ms`
-- `policy.write.ms`
-- `nmap.exec.ms`
-- `xml.validate.ms`
-
-Telemetry output should be append-only JSONL or structured logs suitable for later evidence packaging.
-
-### 8) Verification and Exit Semantics
-- **Exit code 0:** XML is schema-valid and NSE reports `Clean` for all evaluated targets.
-- **Non-zero exit:** any of the following:
-  - XML schema mismatch,
-  - NSE-reported `Dirty` condition,
-  - policy serialization or deterministic mapping failure,
-  - orchestrator runtime failure (Nmap unavailable, malformed config, etc.).
-
-### 9) Implementation Constraints
-- **Language:** Python (`subprocess` or `asyncio`) or Go.
-- **No external parser dependency at hand-off:** final decision should be made from canonical XML/NSE outputs without additional ad hoc transforms.
-- **Environment priority:** minimize filesystem interrupts and metadata churn in WSL2/Minikube.
-
-### 10) Reference Integration Path
-A practical Python entrypoint is expected at:
-- `lean/iato_v7/scripts/nmap_path_audit_orchestrator.py`
-
-NSE policy logic is expected at:
-- `lean/iato_v7/nse/path_audit.nse`
-
-This design section defines the acceptance baseline for those components.
-
-### 11) Acceptance Criteria
-The orchestration layer is accepted when it demonstrably:
-1. Converts a valid TOML manifest into a deterministic Nmap invocation.
-2. Produces canonical XML via `-oX` and validates it against the IĀTŌ‑V7 schema.
-3. Returns `Clean`/`Dirty` based on NSE in-process checks only.
-4. Emits a non-zero exit status for any integrity deviation.
-5. Maintains bounded, explicit path scanning with latency-aware timing behavior.
+| **Stage / Module**             | **Responsibilities**                                                                                       | **Deterministic / Compliance Notes**                                         | **Telemetry / Output**                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------- |
+| **1. Manifest Parser**         | Parse TOML, normalize explicit paths, reject unspecified defaults                                          | Ensures deterministic path resolution                                        | `manifest.parse.ms`                    |
+| **2. Policy Builder**          | Generate stable, sorted policy for NSE scripts (hash, mode, ownership, integrity predicates)               | Lexicographic sorting, stable serialization                                  | `policy.write.ms`                      |
+| **3. Command Planner**         | Construct constrained Nmap invocation (`-Pn -sn`, `-oX`, NSE script + args)                                | Fixed command argument order, timing template derived from I/O latency probe | `nmap.exec.ms`                         |
+| **4. Execution + Telemetry**   | Run Nmap via `subprocess` or `asyncio`, track operation latency                                            | Stable runtime environment, pinned Nmap version, no mutable runtime options  | Append-only JSONL structured logs      |
+| **5. Verification Gate**       | Parse XML produced by NSE, enforce Clean/Dirty semantics                                                   | Exit non-zero on policy deviation, schema mismatch, or NSE-reported Dirty    | `xml.validate.ms`, final exit code     |
+| **Deterministic Behavior**     | Stable ordering, artifact mapping `(manifest fingerprint, target root, schema version)`, stable invocation | Essential for audit/compliance (Essential Eight, ISM, SOC 2)                 | N/A                                    |
+| **NSE Contract**               | Custom Lua scripts: hash, ACL, ownership, structural integrity checks                                      | Must set failing status if any deviation                                     | XML `Clean`/`Dirty`                    |
+| **Timing & I/O Strategy**      | Probe latency → map to Nmap `-T2..-T4`; explicit target paths only                                         | Prevent unbounded DFS traversal                                              | N/A                                    |
+| **Implementation Constraints** | Python/Go, no extra parsers, minimal filesystem churn                                                      | Deterministic outputs in WSL2/Minikube                                       | N/A                                    |
+| **Reference Integration**      | Entrypoint: `nmap_path_audit_orchestrator.py` <br> NSE logic: `path_audit.nse`                             | Integration-ready deterministic orchestration                                | N/A                                    |
+| **Acceptance Criteria**        | Valid TOML → deterministic Nmap → canonical XML → Clean/Dirty → non-zero exit if deviation                 | Ensures full compliance and traceability                                     | Structured telemetry JSONL + exit code |
 
 ## Repository Layout
 
@@ -255,7 +183,7 @@ python3 scripts/scan_workers.py data/legacy_workers.csv
 
 ### 5) Create `config.local.toml` with Linux defaults
 
-> ⚠️ **Be careful:** `config.local.toml` is machine-local intent/evidence input. Keep it out of version control and avoid committing sensitive path/hash material.
+> **Be careful:** `config.local.toml` is machine-local intent/evidence input. Keep it out of version control and avoid committing sensitive path/hash material.
 
 ```bash
 cat > config.local.toml <<EOF
@@ -386,8 +314,7 @@ python3 lean/iato_v7/scripts/nmap_path_audit_orchestrator.py --config config.loc
 python3 lean/iato_v7/scripts/nmap_path_audit_orchestrator.py --config config.local.toml
 ```
 
-
-## Architecture Non-Goals
+## Architecture Non-Goals:
 
 To keep the scope explicit, the architecture defines non-goals **NG-001** through **NG-005**:
 
@@ -398,6 +325,3 @@ To keep the scope explicit, the architecture defines non-goals **NG-001** throug
 - **NG-005**: Not a claim of certification, endorsement, or affiliation with **Common Criteria**.
 
 ***IATO-V7 does not assert affiliation with Common Criteria***.
-
----
-
