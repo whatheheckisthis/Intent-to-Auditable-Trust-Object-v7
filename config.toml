@@ -1,63 +1,31 @@
-# IĀTŌ‑V7 orchestrator configuration schema template.
-# Source of truth for deterministic Nmap-based host-path auditing.
-
 schema_version = "1.0.0"
 project = "iato-v7"
-release = "0.1.0"
-
-[orchestrator]
-# Required deterministic execution flags.
-engine = "nmap"
-flags = ["-Pn", "-sn", "-n"]
-output_format = "xml"
+release = "0.7.0"
 
 [audit]
-# Root path mounted into the execution environment (WSL2/Minikube).
-root_path = "/mnt/host"
-# Nmap target should remain loopback for local-only orchestration.
+root_path = "/workspace/Intent-to-Auditable-Trust-Object-v7"
 target = "127.0.0.1"
-# Lua NSE script implementing in-process validation logic.
-nse_script = "lean/iato_v7/nse/path_audit.nse"
-# Fail the build (non-zero exit) when any deviation is detected.
 fail_on_deviation = true
 
-[timing]
-# Use T2 by default in WSL2/9P environments for deterministic behavior.
-template = "T2"
-# Set to T3 only after validated host-path throughput.
-max_template = "T3"
-# Optional interval between scans; 0 disables polling.
-scan_interval_seconds = 0
-
 [artifacts]
-# Mandatory canonical artifact.
 xml_output = "lean/iato_v7/nmap-path-state.xml"
-# Optional machine-readable policy expansion produced by orchestrator.
 policy_output = "lean/iato_v7/.nmap-path-policy.json"
+log_output = "lean/iato_v7/mcp-orchestration.jsonl"
 
 [[targets]]
-id = "kubelet-config"
-path = "/etc/kubernetes/kubelet.conf"
+id = "lakefile"
+path = "lakefile.toml"
 required = true
-sha256 = "<expected_sha256_hex>"
-owner = "root"
-group = "root"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+owner = "0"
+group = "0"
 mode = "0644"
 
 [[targets]]
-id = "audit-rules"
-path = "/etc/audit/rules.d"
+id = "orchestrator-script"
+path = "lean/iato_v7/scripts/nmap_path_audit_orchestrator.py"
 required = true
-sha256 = "<expected_sha256_hex_or_manifest_hash>"
-owner = "root"
-group = "root"
-mode = "0750"
-
-[[targets]]
-id = "app-config"
-path = "/opt/iato/config"
-required = false
-sha256 = "<expected_sha256_hex_or_manifest_hash>"
-owner = "iato"
-group = "iato"
-mode = "0750"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+owner = "0"
+group = "0"
+mode = "0755"

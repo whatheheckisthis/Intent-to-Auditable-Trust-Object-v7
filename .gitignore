@@ -26,6 +26,7 @@ Thumbs.db
 # Nmap orchestration artifacts
 lean/iato_v7/.nmap-path-policy.json
 lean/iato_v7/nmap-path-state.xml
+lean/iato_v7/mcp-orchestration.jsonl
 
 # Local audit configuration (may contain environment-specific/sensitive values)
 config.local.toml
