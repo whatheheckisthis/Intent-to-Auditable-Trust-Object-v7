@@ -122,8 +122,8 @@ Manifest Parser ──► Policy Builder ──► Command Planner
 
 ## Quick Start (Linux)
 
-**Run:** `iato-scan --config config.local.toml`  
-**Output:** `lean/iato_v7/nmap-path-state.xml`  
+**Run:** `iato scan --config config.local.toml`  
+**Output:** `lean/iato_v7/nmap-path-state.xml` + `lean/iato_v7/mcp-orchestration.jsonl`  
 **Exit:** `0 = Clean`, non-zero = Dirty or error
 
 ### Setup
@@ -134,7 +134,7 @@ git clone https://github.com/<whatheheckisthis>/Intent-to-Auditable-Trust-Object
 cd Intent-to-Auditable-Trust-Object
 
 # Dependencies
-sudo apt update && sudo apt install -y git curl python3 python3-pip build-essential nmap
+sudo apt update && sudo apt install -y git curl python3 python3-pip build-essential
 
 # Lean toolchain
 ./scripts/install-formal-verification-deps.sh
@@ -146,8 +146,8 @@ python3 scripts/scan_workers.py data/legacy_workers.csv
 ./scripts/lake_build.sh
 
 # Alias
-alias iato-scan='python3 lean/iato_v7/scripts/nmap_path_audit_orchestrator.py'
-echo "alias iato-scan='python3 lean/iato_v7/scripts/nmap_path_audit_orchestrator.py'" >> ~/.bashrc
+alias iato='./bin/iato'
+echo "alias iato='./bin/iato'" >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -161,25 +161,15 @@ schema_version = "1.0.0"
 project = "iato-v7"
 release = "local"
 
-[orchestrator]
-engine = "nmap"
-flags = ["-Pn", "-sn", "-n"]
-output_format = "xml"
-
 [audit]
 root_path = "/"
 target = "127.0.0.1"
-nse_script = "lean/iato_v7/nse/path_audit.nse"
 fail_on_deviation = true
-
-[timing]
-template = "T2"
-max_template = "T3"
-scan_interval_seconds = 0
 
 [artifacts]
 xml_output = "lean/iato_v7/nmap-path-state.xml"
 policy_output = "lean/iato_v7/.nmap-path-policy.json"
+log_output = "lean/iato_v7/mcp-orchestration.jsonl"
 
 [[targets]]
 id = "jboss-service-unit"
@@ -205,8 +195,8 @@ find /path/to/dir -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum
 ### Run
 
 ```bash
-iato-scan --config config.local.toml --dry-run   # Preview command only
-iato-scan --config config.local.toml             # Produce artefact
+iato scan --config config.local.toml --dry-run   # Preview command only
+iato scan --config config.local.toml             # Produce artefacts
 echo $?                                           # 0 = Clean
 ```
 

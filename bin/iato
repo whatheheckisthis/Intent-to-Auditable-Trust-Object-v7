@@ -29,12 +29,10 @@ done
 [[ -f "lean/iato_v7/scripts/nmap_path_audit_orchestrator.py" ]] || {
   echo "Run from repo root (missing lean/iato_v7/scripts/nmap_path_audit_orchestrator.py)"; exit 1; }
 command -v python3 >/dev/null || { echo "python3 not found. Install: sudo apt install -y python3"; exit 127; }
-command -v nmap >/dev/null || { echo "nmap not found. Install: sudo apt install -y nmap"; exit 127; }
-
 echo "IĀTŌ-V7: Auditing your declared intent..."
 args=(python3 lean/iato_v7/scripts/nmap_path_audit_orchestrator.py --config "$CONFIG")
 if [[ "$DRY" -eq 1 ]]; then
-  echo "Dry-run mode: Showing deterministic Nmap command only."
+  echo "Dry-run mode: Showing deterministic orchestration context only."
   args+=(--dry-run)
 fi
 
