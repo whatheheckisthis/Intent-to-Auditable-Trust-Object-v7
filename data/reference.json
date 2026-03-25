@@ -1,5 +1,0 @@
-{
-  "architecture": "IATO-V7",
-  "worlds": ["rme", "normal"],
-  "notes": "Reference target for worker migration"
-}
