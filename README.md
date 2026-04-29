@@ -20,7 +20,7 @@ V7 is not an orchestrator, a policy engine, a runtime monitor, or a general-purp
 
 ---
 
-## 2. Invariant
+## 1. Invariant
 
 ```
 S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
@@ -38,7 +38,7 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 
 ---
 
-## 3. Execution Model
+## 2. Execution Model
 
 | Property              | Constraint                                                          |
 | --------------------- | ------------------------------------------------------------------- |
@@ -54,7 +54,7 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 
 ---
 
-## 4. Component Mapping
+## 3. Component Mapping
 
 | V7 Component          | IĀTŌ Layer    | Role                                                           |
 | --------------------- | ------------- | -------------------------------------------------------------- |
@@ -67,82 +67,19 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 | `pipeline.binding.json` | Orchestration | DAG binding; declares upstream/downstream stage relationships |
 | `v7-scan.json`        | Evidence      | Emitted artefact; SHA-256 bound; Ed25519 signed                |
 
----
-
-## 5. CI Pipeline 
-
-Stage name: `v7-filesystem-assurance`
-Insert after: `orchestration-snapshot-emit`
-Insert before: `evidence-bundle-sign`
-
-> **[ASSUMPTION]** Pipeline ordering inferred from `pipeline.binding.json`. Verify upstream stage name `orchestration/runner.js` against your `assurance-pipeline.yml`.
-
-```yaml
-v7-filesystem-assurance:
-  name: IĀTŌ-V7 Filesystem Instantiation
-  runs-on: ubuntu-latest
-  needs: [orchestration-snapshot-emit]
-
-  container:
-    image: node:22-alpine
-
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Enforce Read-Only Filesystem Mode
-      run: mount | grep " ro," || echo "WARNING: read-only mount not confirmed"
-
-    - name: Install Dependencies (Locked)
-      run: npm ci --ignore-scripts
-
-    - name: Validate Input Schema
-      run: |
-        node pipeline/verify-schema.js \
-          v7/v7.schema.json \
-          pipeline/inputs/filesystem-snapshot.json
-
-    - name: Run V7 Deterministic Evaluator
-      run: |
-        node v7/runner.js \
-          --manifest v7/manifest.toml \
-          --schema v7/v7.schema.json \
-          --out pipeline/outputs/v7-scan.json
-
-    - name: Validate Output Schema
-      run: |
-        node pipeline/verify-schema.js \
-          v7/output.schema.json \
-          pipeline/outputs/v7-scan.json
-
-    - name: Cryptographic Binding
-      run: |
-        sha256sum pipeline/outputs/v7-scan.json \
-          >> pipeline/outputs/v7-scan.sha256
-        node pipeline/sign-ed25519.js \
-          pipeline/outputs/v7-scan.json \
-          pipeline/outputs/v7-scan.sig
-
-    - name: Fail-Fast Emission
-      if: failure()
-      run: |
-        node pipeline/emit-failure.js \
-          --stage v7-filesystem-assurance
-```
-
 **Gate behaviour:**
 
 | Gate                    | Failure action                                  |
 | ----------------------- | ----------------------------------------------- |
-| Input schema invalid    | Hard halt. Pipeline does not proceed.           |
+| Input schema invalid    | Hard halt. The pipeline does not proceed.           |
 | Evaluator non-zero exit | Hard halt. No output artefact is emitted.       |
 | Output schema invalid   | Hard halt. Artefact is discarded.               |
-| SHA-256 mismatch        | Hard halt. Evidence bundle is not signed.       |
+| SHA-256 mismatch        | Hard halt. The evidence bundle is not signed.       |
 | Any prior gate failed   | `emit-failure.js` records stage; pipeline exits.|
 
 ---
 
-## 6. Scaffold
+## 4. Scaffold
 
 ```
 v7/
@@ -160,7 +97,7 @@ v7/
 
 ---
 
-## 7. Constraint Enforcement
+## 5. Constraint Enforcement
 
 The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.
 
@@ -188,7 +125,7 @@ schema_validation = "pre-execution"
 
 ---
 
-## 8. Output Model
+## 6. Output Model
 
 All V7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
 
@@ -204,14 +141,14 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 
 ---
 
-## 9. C4 Placement
+## 7. C4 Placement
 
 <img width="1440" height="2258" alt="image" src="https://github.com/user-attachments/assets/fd0a485e-957a-42da-b037-ce38fdf35429" />
 
 
 ---
 
-## 10. Boundary 
+## 8. Boundary 
 
 **Guarantees:**
 - `F(S_in, C, O)` is evaluated deterministically against a schema-validated input snapshot.
@@ -230,7 +167,7 @@ A V7 failure means one of three conditions holds: `S_in` did not satisfy the inp
 
 ---
 
-**Assumptions** 
+**Assumptions:** 
 - *Pipeline stage ordering (`needs: [orchestration-snapshot-emit]`) is inferred from `pipeline.binding.json`. Confirm the upstream stage name.*
 - *Layer names (Index, Schema, Orchestration, Instantiation, Evidence) are inferred from the V7 spec. Confirm these match your canonical IĀTŌ index layer labels.*
 - *`pipeline/sign-ed25519.js` is assumed to exist in the parent pipeline. If absent, the cryptographic binding step must be implemented.*
