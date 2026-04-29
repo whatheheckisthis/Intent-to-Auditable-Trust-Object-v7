@@ -50,11 +50,11 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 
 `evaluated_at` in `output.schema.json` carries the static sentinel value `"STATIC"`. It is not a timestamp. Its presence satisfies the schema contract; it does not encode temporal state.
 
----
+
 
 ## 3. Component Mapping
 
-| V7 Component          | IĀTŌ Layer    | Role                                                           |
+| Component          | Layer    | Role                                                           |
 | --------------------- | ------------- | -------------------------------------------------------------- |
 | `manifest.toml`       | Instantiation | Declares execution intent; schema-bound; static               |
 | `runner.js`           | Instantiation | Implements `F(S_in, C, O)`; pure deterministic evaluator       |
@@ -75,7 +75,7 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 | SHA-256 mismatch        | Hard halt. The evidence bundle is not signed.       |
 | Any prior gate failed   | `emit-failure.js` records stage; pipeline exits.|
 
----
+
 
 ## 4. Scaffold
 
@@ -93,7 +93,7 @@ v7/
 
 > Schema files are relocated from `v7/*.schema.json` to `v7/schemas/` to match `Schema-root: v7/schemas/` declared in the module header. Update `runner.js` schema path arguments accordingly.
 
----
+
 
 ## 5. Constraint Enforcement
 
@@ -121,7 +121,7 @@ schema_validation = "pre-execution"
 4. `fs` access restricted to read operations. Any write outside the declared output path is a fault.
 5. Exit code `0` only on full invariant satisfaction. Any partial output state exists non-zero.
 
----
+
 
 ## 6. Output Model
 
@@ -137,9 +137,9 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 
 `output.schema.json` enforces `additionalProperties: false`. Any field not declared in the schema is a schema violation, and the artefact is discarded.
 
----
 
-## 7. C4 Placement
+
+## 7. Architecture 
 
 <img width="1440" height="2258" alt="image" src="https://github.com/user-attachments/assets/fd0a485e-957a-42da-b037-ce38fdf35429" />
 
@@ -161,12 +161,13 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 - Any output field not declared in `output.schema.json`.
 
 **Failure semantics:**
-A V7 failure means one of three conditions holds: `S_in` did not satisfy the input schema; `F` produced output that did not satisfy `output.schema.json`; or the cryptographic binding step could not be completed. In all three cases, the pipeline halts, no artefact is promoted to the Evidence layer, and `emit-failure.js` records the failing stage for upstream audit.
+Failure means one of three conditions holds: `S_in` did not satisfy the input schema; `F` produced output that did not satisfy `output.schema.json`; or the cryptographic binding step could not be completed. In all three cases, the pipeline halts, no artefact is promoted to the Evidence layer, and `emit-failure.js` records the failing stage for upstream audit.
 
----
+
 
 **Assumptions:** 
-- *Pipeline stage ordering (`needs: [orchestration-snapshot-emit]`) is inferred from `pipeline.binding.json`. Confirm the upstream stage name.*
-- *Layer names (Index, Schema, Orchestration, Instantiation, Evidence) are inferred from the V7 spec. Confirm these match your canonical IĀTŌ index layer labels.*
-- *`pipeline/sign-ed25519.js` is assumed to exist in the parent pipeline. If absent, the cryptographic binding step must be implemented.*
-- *`v7/schemas/` relocation from `v7/*.schema.json` is a structural correction for `Schema-root` consistency. Confirm no other modules reference the flat path.*
+
+- Pipeline stage ordering (`needs: [orchestration-snapshot-emit]`) is inferred from `pipeline.binding.json`. Confirm the upstream stage name.
+- Layer names (Index, Schema, Orchestration, Instantiation, Evidence) are inferred from the v7 spec. Confirm these match your canonical IĀTŌ index labels.
+- `pipeline/sign-ed25519.js` is assumed to exist in the parent pipeline. If absent, the cryptographic binding step must be implemented.
+- `v7/schemas/` relocation from `v7/.schema.json` is a structural correction for `Schema-root` consistency. Confirm no other modules reference the flat path.
