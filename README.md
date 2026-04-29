@@ -14,17 +14,13 @@ Schema-root : v7/schemas/
 
 # IĀTŌ-V7 — Filesystem State Assurance Instantiation
 
+>V7 is a bounded instantiation of the IĀTŌ execution model applied to filesystem-state evaluation. It receives a filesystem snapshot `S_in` from the Orchestration layer, applies a deterministic evaluation function `F` parameterised by control schema `C` and operational context `O`, and emits a signed, hash-bound evidence artefact `S_out` to the Evidence layer. All behaviour is declared in `manifest.toml` and enforced by schema before execution. No runtime inference occurs.
 
-
-## 1. Instantiation Definition
-
-V7 is a bounded instantiation of the IĀTŌ execution model applied to filesystem-state evaluation. It receives a filesystem snapshot `S_in` from the Orchestration layer, applies a deterministic evaluation function `F` parameterised by control schema `C` and operational context `O`, and emits a signed, hash-bound evidence artefact `S_out` to the Evidence layer. All behaviour is declared in `manifest.toml` and enforced by schema prior to execution. No runtime inference occurs.
-
-V7 is **not** an orchestrator, a policy engine, a runtime monitor, or a general-purpose scanner. It does not write to the filesystem, resolve dynamic imports, accept environment variables, or produce outputs that are not schema-validated. It does not interpret control definitions — it applies them as supplied by the parent Orchestration layer.
+V7 is not an orchestrator, a policy engine, a runtime monitor, or a general-purpose scanner. It does not write to the filesystem, resolve dynamic imports, accept environment variables, or produce outputs that are not schema-validated. It does not interpret control definitions — it applies them as supplied by the parent Orchestration layer.
 
 ---
 
-## 2. Architectural Invariant
+## 2. Invariant
 
 ```
 S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
@@ -73,7 +69,7 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 
 ---
 
-## 5. CI Pipeline Integration
+## 5. CI Pipeline 
 
 Stage name: `v7-filesystem-assurance`
 Insert after: `orchestration-snapshot-emit`
@@ -146,7 +142,7 @@ v7-filesystem-assurance:
 
 ---
 
-## 6. Repository Scaffold
+## 6. Scaffold
 
 ```
 v7/
@@ -164,7 +160,7 @@ v7/
 
 ---
 
-## 7. Determinism & Constraint Enforcement
+## 7. Constraint Enforcement
 
 The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.
 
@@ -192,7 +188,7 @@ schema_validation = "pre-execution"
 
 ---
 
-## 8. Evidence Output Model
+## 8. Output Model
 
 All V7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
 
@@ -215,7 +211,7 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 
 ---
 
-## 10. Boundary Statement
+## 10. Boundary 
 
 **Guarantees:**
 - `F(S_in, C, O)` is evaluated deterministically against a schema-validated input snapshot.
@@ -234,7 +230,7 @@ A V7 failure means one of three conditions holds: `S_in` did not satisfy the inp
 
 ---
 
-**Assumptions made during formalisation** 
+**Assumptions** 
 - *Pipeline stage ordering (`needs: [orchestration-snapshot-emit]`) is inferred from `pipeline.binding.json`. Confirm the upstream stage name.*
 - *Layer names (Index, Schema, Orchestration, Instantiation, Evidence) are inferred from the V7 spec. Confirm these match your canonical IĀTŌ index layer labels.*
 - *`pipeline/sign-ed25519.js` is assumed to exist in the parent pipeline. If absent, the cryptographic binding step must be implemented.*
