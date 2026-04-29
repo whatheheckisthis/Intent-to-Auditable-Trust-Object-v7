@@ -14,9 +14,7 @@ Schema-root : v7/schemas/
 
 # IĀTŌ-V7 — Filesystem State Assurance Instantiation
 
->V7 is a bounded instantiation of the IĀTŌ execution model applied to filesystem-state evaluation. It receives a filesystem snapshot `S_in` from the Orchestration layer, applies a deterministic evaluation function `F` parameterised by control schema `C` and operational context `O`, and emits a signed, hash-bound evidence artefact `S_out` to the Evidence layer. All behaviour is declared in `manifest.toml` and enforced by schema before execution. No runtime inference occurs.
-
-V7 is not an orchestrator, a policy engine, a runtime monitor, or a general-purpose scanner. It does not write to the filesystem, resolve dynamic imports, accept environment variables, or produce outputs that are not schema-validated. It does not interpret control definitions — it applies them as supplied by the parent Orchestration layer.
+>v7 is a bounded instantiation of the IĀTŌ execution model applied to filesystem-state evaluation. It receives a filesystem snapshot `S_in` from the Orchestration layer, applies a deterministic evaluation function `F` parameterised by control schema `C` and operational context `O`, and emits a signed, hash-bound evidence artefact `S_out` to the Evidence layer. All behaviour is declared in `manifest.toml` and enforced by schema before execution. No runtime inference occurs. An orchestrator, a policy engine, a runtime monitor, or a general-purpose scanner. It does not write to the filesystem, resolve dynamic imports, accept environment variables, or produce outputs that are not schema-validated. It does not interpret control definitions — it applies them as supplied by the parent Orchestration layer.
 
 ---
 
@@ -83,7 +81,7 @@ This invariant is the sole correctness criterion for V7. Any output not satisfyi
 
 ```
 v7/
-├── manifest.toml           # Declared execution intent (schema-bound, static)
+├── manifest. toml           # Declared execution intent (schema-bound, static)
 ├── runner.js               # Deterministic evaluator: F(S_in, C, O)
 ├── pipeline.binding.json   # DAG binding to parent Orchestration layer
 └── schemas/
@@ -121,7 +119,7 @@ schema_validation = "pre-execution"
 2. No `process.env` access. No `Date`, `Math.random()`, or any non-deterministic primitive.
 3. No `require()` or `import()` calls beyond the static dependency closure resolved by `npm ci`.
 4. `fs` access restricted to read operations. Any write outside the declared output path is a fault.
-5. Exit code `0` only on full invariant satisfaction. Any partial output state exits non-zero.
+5. Exit code `0` only on full invariant satisfaction. Any partial output state exists non-zero.
 
 ---
 
@@ -137,7 +135,7 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 | CI provenance      | GitHub Actions run ID and commit SHA embedded in pipeline stage |
 | Append-only        | Evidence directory is write-once per pipeline run; no overwrite |
 
-`output.schema.json` enforces `additionalProperties: false`. Any field not declared in the schema is a schema violation and the artefact is discarded.
+`output.schema.json` enforces `additionalProperties: false`. Any field not declared in the schema is a schema violation, and the artefact is discarded.
 
 ---
 
