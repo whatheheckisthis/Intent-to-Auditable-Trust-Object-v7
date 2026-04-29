@@ -32,7 +32,7 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | `F`      | Deterministic evaluator (`runner.js`) — pure function, no side effects  |
 | `S_out`  | Signed, hash-bound evidence artefact emitted to Evidence layer          |
 
-This invariant is the sole correctness criterion for V7. Any output not satisfying it is a verification failure.
+This invariant is the sole correctness criterion for v7. Any output that does not satisfy it is a verification failure.
 
 ---
 
@@ -125,7 +125,7 @@ schema_validation = "pre-execution"
 
 ## 6. Output Model
 
-All V7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
+All v7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
 
 | Property           | Mechanism                                                       |
 | ------------------ | --------------------------------------------------------------- |
@@ -144,7 +144,6 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 <img width="1440" height="2258" alt="image" src="https://github.com/user-attachments/assets/fd0a485e-957a-42da-b037-ce38fdf35429" />
 
 
----
 
 ## 8. Boundary 
 
@@ -160,9 +159,9 @@ All V7 outputs are immutable artefacts. Post-emission mutation invalidates the e
 - Execution that proceeds past a schema validation failure.
 - Any output field not declared in `output.schema.json`.
 
-**Failure semantics:**
-Failure means one of three conditions holds: `S_in` did not satisfy the input schema; `F` produced output that did not satisfy `output.schema.json`; or the cryptographic binding step could not be completed. In all three cases, the pipeline halts, no artefact is promoted to the Evidence layer, and `emit-failure.js` records the failing stage for upstream audit.
+**Failure:**
 
+Failure means one of three conditions holds: `S_in` did not satisfy the input schema; `F` produced output that did not satisfy `output.schema.json`; or the cryptographic binding step could not be completed. In all three cases, the pipeline halts, no artefact is promoted to the Evidence layer, and `emit-failure.js` records the failing stage for upstream audit.
 
 
 **Assumptions:** 
