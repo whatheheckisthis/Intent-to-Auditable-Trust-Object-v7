@@ -1,217 +1,241 @@
-# Intent-to-Auditable-Trust-Object (IĀTŌ-V7)
+<!--
+Module      : IĀTŌ-V7
+Path        : v7/README.md
+Type        : Instantiation Layer
+Parent      : IĀTŌ Security Controls Index
+Layer       : Instantiation
+Frameworks  : ISO 27001 A.12.1, NIST SP 800-53 CM-6, SOC 2 CC6.1
+Invariant   : S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
+Scope       : Filesystem state verification — read-only, deterministic, schema-bound
+Binding     : Receives S_in from Orchestration layer; emits S_out to Evidence layer
+Modified    : 2026-04-29T00:00:00Z
+Schema-root : v7/schemas/
+-->
 
-Terminal-native host-path auditing. Reproducible XML artefacts. Traceable JBoss EAP 7 migration for SOC environments.
+# IĀTŌ-V7 — Filesystem State Assurance Instantiation
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](lean/iato_v7/lakefile.lean)
-[![Essential%208](https://img.shields.io/badge/Essential%208-ML4-blue)](docs/cyber-risk-controls.md)
-[![SOC2](https://img.shields.io/badge/SOC2-CC6.1%20%7C%20CC6.6-orange)](docs/ARCHITECTURE.md)
-[![ISM](https://img.shields.io/badge/ISM-0457--0460-green)](docs/threat-model.md)
 
----
 
-## What This Is
+## 1. Instantiation Definition
 
-IĀTŌ-V7 is a fixed-scope uplift tool. It closes a defined gap — the absence of deterministic, auditable filesystem evidence — in environments migrating legacy JBoss EAP 7 workers toward Essential Eight ML4 and ISM compliance posture.
+V7 is a bounded instantiation of the IĀTŌ execution model applied to filesystem-state evaluation. It receives a filesystem snapshot `S_in` from the Orchestration layer, applies a deterministic evaluation function `F` parameterised by control schema `C` and operational context `O`, and emits a signed, hash-bound evidence artefact `S_out` to the Evidence layer. All behaviour is declared in `manifest.toml` and enforced by schema prior to execution. No runtime inference occurs.
 
-It does not ship features. It does not accumulate abstractions. Each engagement produces three artefacts, each directly mapped to a control objective, and nothing else. The measure of maturity here is not capability surface — it is the reduction of unverified assumptions between declared intent and observed state.
-
-Simplicity is load-bearing. Every layer that cannot be traced to a control mapping is a liability, not an asset.
-
----
-
-## Delivery Artefacts
-
-Each artefact is versioned, schema-validated, and repository-linked before hand-off.
-
-### 1. Canonical XML Audit Artefact
-
-Deterministic, schema-validated XML produced per scan run. Captures observed filesystem state against declared intent. Exits `0` on Clean, non-zero on any deviation. Ready for direct submission as compliance evidence.
-
-**Output:** `lean/iato_v7/nmap-path-state.xml`
-
-| Framework | Control | Basis |
-|---|---|---|
-| SOC 2 | `CC6.1` | Observed state verified against declared control posture |
-| SOC 2 | `CC6.6` | Per-path ownership and mode verification as access restriction evidence |
-| SOC 2 | `PI1.3` | Deterministic output confirms consistent, auditable processing |
-| ISM | `0457` | Privileged boundary and worker domain isolation assurance |
-| ISM | `0458` | Administrative separation enforced at migration execution boundary |
-| Essential Eight ML4 | Application Control | Binary and configuration state verified before worker promotion |
+V7 is **not** an orchestrator, a policy engine, a runtime monitor, or a general-purpose scanner. It does not write to the filesystem, resolve dynamic imports, accept environment variables, or produce outputs that are not schema-validated. It does not interpret control definitions — it applies them as supplied by the parent Orchestration layer.
 
 ---
 
-### 2. TOML Manifest (Declared-Intent Register)
+## 2. Architectural Invariant
 
-Versioned, machine-readable declaration of expected filesystem state: paths, hash expectations, ownership, mode. The source-of-truth input to every scan. Evidence that intent was defined before execution — not reconstructed after the fact.
-
-**Output:** `config.local.toml` — schema-governed, machine-local, not version-controlled
-
-| Framework | Control | Basis |
-|---|---|---|
-| SOC 2 | `CC2.1` | Structured information supporting internal control |
-| SOC 2 | `CC8.1` | Promotion proceeds only after manifest-defined intent is verified |
-| ISM | `0038` | Security documentation maintained and accessible to relevant personnel |
-| Essential Eight ML4 | — | Control objectives documented and independently verifiable |
-| NIST SSDF | `PO.5` | Supporting tooling enforces declared state before execution |
-
----
-
-### 3. MCP Orchestration Log
-
-Append-only JSONL produced per session. Each entry carries timestamp, script version hash, command chain, exit state, and deviation flag. The audit trail for every administrative action taken during a scan run.
-
-**Format:** `timestamp | script_version_hash | command_chain | exit_state | deviation_flag`
-
-| Framework | Control | Basis |
-|---|---|---|
-| SOC 2 | `CC7.2` | Per-operation audit trail for system component monitoring |
-| SOC 2 | `CC7.3` | Timestamped command records as security event evidence |
-| ISM | `0582` | Audit logs maintained for all administrative actions |
-| Essential Eight ML4 | — | Logging sufficient to reconstruct events and support independent audit |
-
----
-
-## Architecture
-
-```text
-config.toml
-   │
-   ▼
-Manifest Parser ──► Policy Builder ──► Command Planner
-                                            │
-                                            ▼
-                                   Nmap + NSE Scripts
-                                            │
-                                            ▼
-                                   Canonical XML (-oX)
-                                            │
-                                            ▼
-                                   Schema Verification
-                                            │
-                                            ▼
-                                   Clean/Dirty + Exit Code
+```
+S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 ```
 
-| Component | Role |
-|---|---|
-| **TOML Manifest** | Declared-intent register |
-| **Nmap** | Stateless, high-concurrency scan orchestrator |
-| **NSE Scripts** | In-process hash, ACL, ownership, and integrity validation |
-| **XML Artefact** | Schema-validated compliance evidence |
-| **MCP Log** | Append-only administrative audit trail |
+| Symbol   | Definition                                                              |
+| -------- | ----------------------------------------------------------------------- |
+| `S_in`   | Immutable filesystem snapshot received from Orchestration layer         |
+| `C`      | Control schema (`v7.schema.json`) — defines evaluation contract         |
+| `O`      | Operational context declared in `manifest.toml` — static, pre-declared  |
+| `F`      | Deterministic evaluator (`runner.js`) — pure function, no side effects  |
+| `S_out`  | Signed, hash-bound evidence artefact emitted to Evidence layer          |
 
-**Design constraints** — not aspirational, load-bearing:
-
-- Equivalent manifest inputs produce equivalent command lines, policy payloads, and artefact paths. Always.
-- No network discovery side effects. Audit-only runtime posture.
-- Integrity checks run in-process during scan execution. No post-hoc reconciliation.
-- No abstractions that cannot be traced to a control mapping. Complexity that cannot be audited is technical debt disguised as architecture.
+This invariant is the sole correctness criterion for V7. Any output not satisfying it is a verification failure.
 
 ---
 
-## Compliance Coverage
+## 3. Execution Model
 
-| Framework | Controls | Artefacts |
-|---|---|---|
-| Essential Eight ML4 | Privilege separation, application control, patch governance | 1, 2 |
-| SOC 2 TSC | `CC2.1`, `CC6.1`, `CC6.6`, `CC7.2`, `CC7.3`, `CC8.1`, `PI1.3` | 1, 2, 3 |
-| ISM (ASD) | `0038`, `0457`–`0460`, `0582` | 1, 2, 3 |
-| NIST SSDF | `PO.5`, `PW.4`, `RV.1` | 1, 2 |
+| Property              | Constraint                                                          |
+| --------------------- | ------------------------------------------------------------------- |
+| Filesystem access     | Read-only. Write operations are a hard fault.                       |
+| Environment variables | `ENV := ∅`. No environment variable is read or injected at runtime. |
+| Time dependency       | `Δt = 0`. Output is not a function of wall-clock time.             |
+| Dynamic imports       | Disallowed. All module resolution is static and locked at `npm ci`. |
+| Runtime inference     | Disallowed. Behaviour is fully declared in `manifest.toml` and `C`. |
+| Side effects          | None permitted. `F` is a pure function over `S_in`, `C`, `O`.      |
+| Schema validation     | Enforced before execution begins. Invalid input halts the pipeline. |
 
----
-
-## Quick Start (Linux)
-
-**Run:** `iato scan --config config.local.toml`  
-**Output:** `lean/iato_v7/nmap-path-state.xml` + `lean/iato_v7/mcp-orchestration.jsonl`  
-**Exit:** `0 = Clean`, non-zero = Dirty or error
-
-### Setup
-
-```bash
-# Clone
-git clone https://github.com/<whatheheckisthis>/Intent-to-Auditable-Trust-Object.git
-cd Intent-to-Auditable-Trust-Object
-
-# Dependencies
-sudo apt update && sudo apt install -y git curl python3 python3-pip build-essential
-
-# Lean toolchain
-./scripts/install-formal-verification-deps.sh
-./scripts/setup-lean-ci-deps.sh
-
-# Build and validate
-cd lean/iato_v7 && lake test && cd ../..
-python3 scripts/scan_workers.py data/legacy_workers.csv
-./scripts/lake_build.sh
-
-# Alias
-alias iato='./bin/iato'
-echo "alias iato='./bin/iato'" >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Configure
-
-> `config.local.toml` is machine-local declared intent. Do not commit. Do not transmit path or hash material externally — doing so weakens evidence integrity.
-
-```bash
-cat > config.local.toml <<EOF
-schema_version = "1.0.0"
-project = "iato-v7"
-release = "local"
-
-[audit]
-root_path = "/"
-target = "127.0.0.1"
-fail_on_deviation = true
-
-[artifacts]
-xml_output = "lean/iato_v7/nmap-path-state.xml"
-policy_output = "lean/iato_v7/.nmap-path-policy.json"
-log_output = "lean/iato_v7/mcp-orchestration.jsonl"
-
-[[targets]]
-id = "jboss-service-unit"
-path = "/etc/systemd/system/jboss.service"
-required = true
-sha256 = "<replace_with_sha256sum_output>"
-owner = "root"
-group = "root"
-mode = "0644"
-EOF
-```
-
-Compute hashes locally before any scan run:
-
-```bash
-# Single file
-sha256sum /etc/systemd/system/jboss.service
-
-# Directory (deterministic recursive)
-find /path/to/dir -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum
-```
-
-### Run
-
-```bash
-iato scan --config config.local.toml --dry-run   # Preview command only
-iato scan --config config.local.toml             # Produce artefacts
-echo $?                                           # 0 = Clean
-```
+`evaluated_at` in `output.schema.json` carries the static sentinel value `"STATIC"`. It is not a timestamp. Its presence satisfies the schema contract; it does not encode temporal state.
 
 ---
 
-## Non-Goals
+## 4. Component Mapping
 
-- **NG-001:** Not a replacement for a full organisational SDLC or security programme.
-- **NG-002:** Not a runtime hardening guarantee across all environments.
-- **NG-003:** Not formal verification of third-party or external system behaviour.
-- **NG-004:** Not automatic compliance attestation — organisation-specific controls and evidence are required.
-- **NG-005:** Not affiliated with or endorsed by Common Criteria.
+| V7 Component          | IĀTŌ Layer    | Role                                                           |
+| --------------------- | ------------- | -------------------------------------------------------------- |
+| `manifest.toml`       | Instantiation | Declares execution intent; schema-bound; static               |
+| `runner.js`           | Instantiation | Implements `F(S_in, C, O)`; pure deterministic evaluator       |
+| `v7.schema.json`      | Schema        | Input contract; defines valid `S_in` and `C` structure         |
+| `scan.schema.json`    | Schema        | Filesystem scan output contract                                |
+| `mapping.schema.json` | Schema        | File-to-control mapping contract                               |
+| `output.schema.json`  | Schema        | `S_out` evidence artefact contract                             |
+| `pipeline.binding.json` | Orchestration | DAG binding; declares upstream/downstream stage relationships |
+| `v7-scan.json`        | Evidence      | Emitted artefact; SHA-256 bound; Ed25519 signed                |
 
 ---
 
-*Cross-reference: `docs/ARCHITECTURE.md` — system invariants and design rationale*  
-*Cross-reference: `docs/WORKER_COMPAT.md` — audit and implementation narrative*  
-*Cross-reference: `docs/cyber-risk-controls.md` — Essential Eight control coverage*
+## 5. CI Pipeline Integration
+
+Stage name: `v7-filesystem-assurance`
+Insert after: `orchestration-snapshot-emit`
+Insert before: `evidence-bundle-sign`
+
+> **[ASSUMPTION]** Pipeline ordering inferred from `pipeline.binding.json`. Verify upstream stage name `orchestration/runner.js` against your `assurance-pipeline.yml`.
+
+```yaml
+v7-filesystem-assurance:
+  name: IĀTŌ-V7 Filesystem Instantiation
+  runs-on: ubuntu-latest
+  needs: [orchestration-snapshot-emit]
+
+  container:
+    image: node:22-alpine
+
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Enforce Read-Only Filesystem Mode
+      run: mount | grep " ro," || echo "WARNING: read-only mount not confirmed"
+
+    - name: Install Dependencies (Locked)
+      run: npm ci --ignore-scripts
+
+    - name: Validate Input Schema
+      run: |
+        node pipeline/verify-schema.js \
+          v7/v7.schema.json \
+          pipeline/inputs/filesystem-snapshot.json
+
+    - name: Run V7 Deterministic Evaluator
+      run: |
+        node v7/runner.js \
+          --manifest v7/manifest.toml \
+          --schema v7/v7.schema.json \
+          --out pipeline/outputs/v7-scan.json
+
+    - name: Validate Output Schema
+      run: |
+        node pipeline/verify-schema.js \
+          v7/output.schema.json \
+          pipeline/outputs/v7-scan.json
+
+    - name: Cryptographic Binding
+      run: |
+        sha256sum pipeline/outputs/v7-scan.json \
+          >> pipeline/outputs/v7-scan.sha256
+        node pipeline/sign-ed25519.js \
+          pipeline/outputs/v7-scan.json \
+          pipeline/outputs/v7-scan.sig
+
+    - name: Fail-Fast Emission
+      if: failure()
+      run: |
+        node pipeline/emit-failure.js \
+          --stage v7-filesystem-assurance
+```
+
+**Gate behaviour:**
+
+| Gate                    | Failure action                                  |
+| ----------------------- | ----------------------------------------------- |
+| Input schema invalid    | Hard halt. Pipeline does not proceed.           |
+| Evaluator non-zero exit | Hard halt. No output artefact is emitted.       |
+| Output schema invalid   | Hard halt. Artefact is discarded.               |
+| SHA-256 mismatch        | Hard halt. Evidence bundle is not signed.       |
+| Any prior gate failed   | `emit-failure.js` records stage; pipeline exits.|
+
+---
+
+## 6. Repository Scaffold
+
+```
+v7/
+├── manifest.toml           # Declared execution intent (schema-bound, static)
+├── runner.js               # Deterministic evaluator: F(S_in, C, O)
+├── pipeline.binding.json   # DAG binding to parent Orchestration layer
+└── schemas/
+    ├── v7.schema.json      # Instantiation input contract
+    ├── scan.schema.json    # Filesystem scan output contract
+    ├── mapping.schema.json # File-to-control mapping contract
+    └── output.schema.json  # S_out evidence artefact contract
+```
+
+> Schema files are relocated from `v7/*.schema.json` to `v7/schemas/` to match `Schema-root: v7/schemas/` declared in the module header. Update `runner.js` schema path arguments accordingly.
+
+---
+
+## 7. Determinism & Constraint Enforcement
+
+The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.
+
+```toml
+module            = "IĀTŌ-V7"
+type              = "filesystem-instantiation"
+mode              = "read-only-assurance"
+invariant         = "S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))"
+scope             = "filesystem-state-verification"
+execution         = "deterministic"
+mutation          = "disallowed"
+environment       = "stripped"
+time_dependency   = false
+dynamic_imports   = false
+schema_validation = "pre-execution"
+```
+
+`runner.js` must enforce:
+
+1. Schema validation of `S_in` against `v7.schema.json` before any evaluation begins.
+2. No `process.env` access. No `Date`, `Math.random()`, or any non-deterministic primitive.
+3. No `require()` or `import()` calls beyond the static dependency closure resolved by `npm ci`.
+4. `fs` access restricted to read operations. Any write outside the declared output path is a fault.
+5. Exit code `0` only on full invariant satisfaction. Any partial output state exits non-zero.
+
+---
+
+## 8. Evidence Output Model
+
+All V7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
+
+| Property           | Mechanism                                                       |
+| ------------------ | --------------------------------------------------------------- |
+| Content binding    | SHA-256 digest of `v7-scan.json` written to `v7-scan.sha256`   |
+| Authenticity       | Ed25519 signature over `v7-scan.json` written to `v7-scan.sig` |
+| Schema conformance | Output validated against `output.schema.json` before signing   |
+| CI provenance      | GitHub Actions run ID and commit SHA embedded in pipeline stage |
+| Append-only        | Evidence directory is write-once per pipeline run; no overwrite |
+
+`output.schema.json` enforces `additionalProperties: false`. Any field not declared in the schema is a schema violation and the artefact is discarded.
+
+---
+
+## 9. C4 Placement
+
+<img width="1440" height="2258" alt="image" src="https://github.com/user-attachments/assets/fd0a485e-957a-42da-b037-ce38fdf35429" />
+
+
+---
+
+## 10. Boundary Statement
+
+**Guarantees:**
+- `F(S_in, C, O)` is evaluated deterministically against a schema-validated input snapshot.
+- `S_out` satisfies `S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))` or is not emitted.
+- No filesystem state is modified during evaluation.
+- No runtime context (environment, time, dynamic resolution) influences output.
+
+**Forbids:**
+- Mutation of `S_in` or any filesystem path during evaluation.
+- Emission of `S_out` that does not pass `output.schema.json` validation.
+- Execution that proceeds past a schema validation failure.
+- Any output field not declared in `output.schema.json`.
+
+**Failure semantics:**
+A V7 failure means one of three conditions holds: `S_in` did not satisfy the input schema; `F` produced output that did not satisfy `output.schema.json`; or the cryptographic binding step could not be completed. In all three cases, the pipeline halts, no artefact is promoted to the Evidence layer, and `emit-failure.js` records the failing stage for upstream audit.
+
+---
+
+**Assumptions made during formalisation** 
+- *Pipeline stage ordering (`needs: [orchestration-snapshot-emit]`) is inferred from `pipeline.binding.json`. Confirm the upstream stage name.*
+- *Layer names (Index, Schema, Orchestration, Instantiation, Evidence) are inferred from the V7 spec. Confirm these match your canonical IĀTŌ index layer labels.*
+- *`pipeline/sign-ed25519.js` is assumed to exist in the parent pipeline. If absent, the cryptographic binding step must be implemented.*
+- *`v7/schemas/` relocation from `v7/*.schema.json` is a structural correction for `Schema-root` consistency. Confirm no other modules reference the flat path.*
