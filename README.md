@@ -14,7 +14,10 @@ Schema-root : v7/schemas/
 
 # IĀTŌ-V7 — Filesystem State Assurance Instantiation
 
->v7 is a bounded instantiation of the IĀTŌ execution model applied to filesystem-state evaluation. It receives a filesystem snapshot `S_in` from the Orchestration layer, applies a deterministic evaluation function `F` parameterised by control schema `C` and operational context `O`, and emits a signed, hash-bound evidence artefact `S_out` to the Evidence layer. All behaviour is declared in `manifest.toml` and enforced by schema before execution. No runtime inference occurs. An orchestrator, a policy engine, a runtime monitor, or a general-purpose scanner. It does not write to the filesystem, resolve dynamic imports, accept environment variables, or produce outputs that are not schema-validated. It does not interpret control definitions — it applies them as supplied by the parent Orchestration layer.
+>v7 is a bounded instantiation of the IĀTŌ execution model defined as a deterministic, schema-constrained state transformation system over filesystem-state lattices. It operates over an input state `S_in`, governed by a declared control schema `C` and operational context `O`. It computes a monotone evaluation `F: S → S` within a partially ordered state space.
+The system is executed as a DAG sequence of schema defined transformations, in which all artefacts and transitions must satisfy pre-declared structural constraints before execution. The resulting output `S_out` is a schema defined cryptographically signed, hash-bound evidence artefact emitted to the Evidence ledger, preserving full provenance of state transitions.
+System behaviour is fully defined by `manifest.toml` as a static constraint graph over permissible transformations. All inputs are validated at the schema ingress boundary, and all execution steps are fail-fast under constraint violation semantics.
+v7 is not an orchestrator, policy engine, or runtime monitor. It is a pure evaluation layer implementing deterministic transformations over structured state under monotone, order-preserving rules.
 
 ---
 
@@ -41,14 +44,14 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | Property              | Constraint                                                          |
 | --------------------- | ------------------------------------------------------------------- |
 | Filesystem access     | Read-only. Write operations are a hard fault.                       |
-| Environment variables | `ENV := ∅`. No environment variable is read or injected at runtime. |
+| Environment variables | `ENV := ∅`. denotes that the evaluation function is defined over a closed state space where no external environment variables participate in computation. |
 | Time dependency       | `Δt = 0`. Output is not a function of wall-clock time.             |
 | Dynamic imports       | Disallowed. All module resolution is static and locked at `npm ci`. |
 | Runtime inference     | Disallowed. Behaviour is fully declared in `manifest.toml` and `C`. |
 | Side effects          | None permitted. `F` is a pure function over `S_in`, `C`, `O`.      |
 | Schema validation     | Enforced before execution begins. Invalid input halts the pipeline. |
 
-`evaluated_at` in `output.schema.json` carries the static sentinel value `"STATIC"`. It is not a timestamp. Its presence satisfies the schema contract; it does not encode temporal state.
+`evaluated_at` in `output.schema.json` carries the static sentinel value `"STATIC"`. It is not a timestamp. Its presence satisfies **the schema contract; it does not encode temporal state.**
 
 
 
