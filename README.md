@@ -32,9 +32,9 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | `F`      | Deterministic evaluator (`runner.js`) — pure function, no side effects  |
 | `S_out`  | Signed, hash-bound evidence artefact emitted to Evidence layer          |
 
-This invariant is the sole correctness criterion for v7. Any output that does not satisfy it is a verification failure.
+>*This invariant is the sole correctness criterion for v7. Any output that does not satisfy it is a verification failure.*
 
----
+
 
 ## 2. Execution Model
 
@@ -97,7 +97,7 @@ v7/
 
 ## 5. Constraint Enforcement
 
-The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.
+>*The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.*
 
 ```toml
 module            = "IĀTŌ-V7"
@@ -125,7 +125,7 @@ schema_validation = "pre-execution"
 
 ## 6. Output Model
 
-All v7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
+>All v7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
 
 | Property           | Mechanism                                                       |
 | ------------------ | --------------------------------------------------------------- |
