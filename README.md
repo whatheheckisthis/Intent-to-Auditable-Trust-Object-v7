@@ -14,9 +14,55 @@ Schema-root : v7/schemas/
 
 
 
-# IĀTŌ-V7 — Filesystem State Assurance Instantiation
+## IĀTŌ-V7 — Filesystem State Assurance Instantiation
 
->Bounded instantiation of the IĀTŌ assurance model defined as a schema-constrained, state transformation system `S_in`, governed by a declared control schema `C` and operational context `O`. It computes a monotone evaluation `F: S → S` within a partially ordered state space.
+>Bounded instantiation of the IĀTŌ assurance model defined as a schema constrained, state transformation system `S_in`, governed by a declared control schema `C` and operational context `O`. It computes a monotone evaluation `F: S → S` within a partially ordered state space.
+
+
+## Execution Context
+
+IĀTŌ-V7 is a container-native, POSIX-constrained, `CI`/`CD`-orchestrated execution system for deterministic filesystem state verification. Execution is defined over a prevalidated orchestration graph and operates as a stateless transformation of `S_in`.
+
+The system does not implement or embed a conventional *(SDLC)* or *(MERN)* application lifecycle. No service runtime, persistent state, or internal initialisation mechanism is present. Execution is non-interactive and occurs solely within externally provisioned pipeline stages.
+
+- Observable output is restricted to declared artefacts and `stdout`, both of which are schema-constrained and subject to validation. No additional output channels are permitted.
+
+- Admissible implementations of the evaluator `F` are restricted to the AJIV equivalence class `[F]`, such that outputs are invariant-preserving, schema-conformant, and observationally equivalent at the `S_out` boundary.
+
+- *SLSA Level 3+* supply chain: hermetic `CI`/`CD` pipeline, container image provenance, locked dependency closure resolved at build time, and integrity-verified build artefacts).
+Supply chain integrity is further augmented via canary tokens embedded in artefact paths and pipeline outputs for tamper and exfiltration detection.
+
+
+
+## Runtime 
+
+| Property              | Constraint                                                          |
+| --------------------- | ------------------------------------------------------------------- |
+| Execution environment | Podman container (isolated, ephemeral)                              |
+| Interface layer       | POSIX compliant shell (bash-driven orchestration)                   |
+| System bootstrap      | None (no startup runtime, no service init layer)                    |
+| State model           | Stateless between invocations; state exists only as `S_in` snapshot |
+| Persistence           | None (no embedded DB, no SQLite, no local runtime store)            |
+| Execution trigger     | CI/CD pipeline invocation (external orchestration only)             |
+
+
+**Operational Constraints**
+
+- No runtime initialisation or *“start-up”* phase exists.
+- No dynamic dependency resolution at runtime.
+- No interactive application lifecycle (system is batch-executed only).
+- No embedded databases or local persistence layers are permitted.
+
+- All dependencies must be resolved before execution - `CI`/`CD` pre-flight.
+- Execution must succeed or fail within a single pass.
+
+**Orchestration**
+
+- Execution is script-driven, primarily via POSIX shell (bash)
+- `CI`/`CD` system defines the execution externally
+- All logic is resolved at orchestration, not runtime.
+- Each invocation, container instantiation.
+- No warm state, caching, or persistent runtime context exists.
 
 ---
 
@@ -34,8 +80,7 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | `F`      | Deterministic evaluator (`runner.js`) — pure function, no side effects  |
 | `S_out`  | Signed, hash-bound evidence artefact emitted to Evidence layer          |
 
->*This invariant is the sole correctness criterion for v7. Any output that does not satisfy it is a verification failure.*
-
+*This invariant is the sole correctness criterion for v7. Any output that does not satisfy it is a verification failure.*
 
 
 ## 2. Execution Model
@@ -50,8 +95,9 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | Side effects          | None permitted. `F` is a pure function over `S_in`, `C`, `O`.      |
 | Schema validation     | Enforced before execution begins. Invalid input halts the pipeline. |
 
-`evaluated_at` in `output.schema.json` carries the static sentinel value `"STATIC"`. It is not a timestamp. Its presence satisfies **the schema contract; it does not encode temporal state.**
+`evaluated_at` in `output.schema.json` carries the static sentinel value `"STATIC"`. It is not a timestamp. Its presence satisfies 
 
+*The schema contract; it does not encode temporal state.*
 
 
 ## 3. Component Mapping
@@ -62,7 +108,7 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | `runner.js`           | Instantiation | Implements `F(S_in, C, O)`; pure deterministic evaluator       |
 | `v7.schema.json`      | Schema        | Input contract; defines valid `S_in` and `C` structure         |
 | `scan.schema.json`    | Schema        | Filesystem scan output contract                                |
-| `mapping.schema.json` | Schema        | File-to-control mapping contract                               |
+| `mapping.schema.json` | Schema        | File to control mapping contract                               |
 | `output.schema.json`  | Schema        | `S_out` evidence artefact contract                             |
 | `pipeline.binding.json` | Orchestration | DAG binding; declares upstream/downstream stage relationships |
 | `v7-scan.json`        | Evidence      | Emitted artefact; SHA-256 bound; Ed25519 signed                |
@@ -93,13 +139,13 @@ v7/
     └── output.schema.json  # S_out evidence artefact contract
 ```
 
-> Schema files are relocated from `v7/*.schema.json` to `v7/schemas/` to match `Schema-root: v7/schemas/` declared in the module header. Update `runner.js` schema path arguments accordingly.
+>Schema files are relocated from `v7/*.schema.json` to `v7/schemas/` to match `Schema-root: v7/schemas/` declared in the module header. Update `runner.js` schema path arguments accordingly.
 
 
 
 ## 5. Constraint Enforcement
 
->*The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.*
+*The following constraints are declared in `manifest.toml` and enforced structurally by `runner.js`. They are not advisory.*
 
 ```toml
 module            = "IĀTŌ-V7"
@@ -127,7 +173,7 @@ schema_validation = "pre-execution"
 
 ## 6. Output Model
 
->All v7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.
+*All v7 outputs are immutable artefacts. Post-emission mutation invalidates the evidence chain.*
 
 | Property           | Mechanism                                                       |
 | ------------------ | --------------------------------------------------------------- |
@@ -148,7 +194,7 @@ schema_validation = "pre-execution"
 
 ## 8. Boundary 
 
-### 1. Execution Guarantees
+### 8.1 Execution Guarantees
 
 | Principle              | Rule                                                                                     |
 | ---------------------- | ---------------------------------------------------------------------------------------- |
@@ -159,7 +205,7 @@ schema_validation = "pre-execution"
 
 
 
-### 2. Hard Constraints 
+### 8.2 Hard Constraints 
 
 | Area              | Constraint                                                           |
 | ----------------- | -------------------------------------------------------------------- |
@@ -170,7 +216,7 @@ schema_validation = "pre-execution"
 
 
 
-### 3. Failure Model
+### 8.3 Failure Model
 
 | Failure Type          | Condition                                           |
 | --------------------- | --------------------------------------------------- |
@@ -180,7 +226,7 @@ schema_validation = "pre-execution"
 
 
 
-### 4. Failure Handling Pipeline
+### 8.4 Failure Handling Pipeline
 
 | Stage           | Behavior                                                          |
 | --------------- | ----------------------------------------------------------------- |
@@ -188,6 +234,21 @@ schema_validation = "pre-execution"
 | Promotion block | No artifact is promoted to Evidence layer                         |
 | Audit logging   | `emit-failure.js` records failing stage for upstream traceability |
 
+---
 
+>This specification is under ongoing implementation. All behavior described herein is enforced as structural invariants rather than runtime heuristics. Mutation is strictly disallowed outside declared transition boundaries, as executed within a prevalidated directed acyclic graph (DAG).
 
+*The system is interpreted under formal methods alignment, including:*
+
+- Order-theoretic abstractions over state transitions
+- Lattice semantics for partial ordering of execution states
+- Galois connections between specification space and execution space
+- Fixed-point semantics for stabilised evaluation under constraint closure
+- Non-interference / relational equivalence for isolation guarantees
+schema-constrained state systems governing all admissible transitions
+
+*AJIV (Assumed Justified Implementation Variance)* 
+- Defines the admissible equivalence class over implementations of the evaluator `F`, such that all members preserve invariant satisfaction and are observationally indistinguishable at the boundary of `S_out`.
+
+*All execution paths are therefore treated as monotone, bounded transformations over a constrained state lattice, with validation enforcing closure properties prior to any observable emission.*
 
