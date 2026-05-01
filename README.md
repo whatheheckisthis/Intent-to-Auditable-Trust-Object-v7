@@ -12,19 +12,18 @@ Modified    : 2026-04-29T00:00:00Z
 Schema-root : v7/schemas/
 -->
 
+
+
 # IĀTŌ-V7 — Filesystem State Assurance Instantiation
 
->v7 is a bounded instantiation of the IĀTŌ execution model defined as a deterministic, schema-constrained state transformation system over filesystem-state lattices. It operates over an input state `S_in`, governed by a declared control schema `C` and operational context `O`. It computes a monotone evaluation `F: S → S` within a partially ordered state space.
-The system is executed as a DAG sequence of schema defined transformations, in which all artefacts and transitions must satisfy pre-declared structural constraints before execution. The resulting output `S_out` is a schema defined cryptographically signed, hash-bound evidence artefact emitted to the Evidence ledger, preserving full provenance of state transitions.
-System behaviour is fully defined by `manifest.toml` as a static constraint graph over permissible transformations. All inputs are validated at the schema ingress boundary, and all execution steps are fail-fast under constraint violation semantics.
-v7 is not an orchestrator, policy engine, or runtime monitor. It is a pure evaluation layer implementing deterministic transformations over structured state under monotone, order-preserving rules.
+>Bounded instantiation of the IĀTŌ assurance model defined as a schema-constrained, state transformation system `S_in`, governed by a declared control schema `C` and operational context `O`. It computes a monotone evaluation `F: S → S` within a partially ordered state space.
 
 ---
 
 ## 1. Invariant
 
 ```
-S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
+S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O)))) 
 ```
 
 | Symbol   | Definition                                                              |
@@ -44,7 +43,7 @@ S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))
 | Property              | Constraint                                                          |
 | --------------------- | ------------------------------------------------------------------- |
 | Filesystem access     | Read-only. Write operations are a hard fault.                       |
-| Environment variables | `ENV := ∅`. denotes that the evaluation function is defined over a closed state space where no external environment variables participate in computation. |
+| Environment variables | `ENV := ∅`. denotes that the evaluation function defined over a closed state space  |
 | Time dependency       | `Δt = 0`. Output is not a function of wall-clock time.             |
 | Dynamic imports       | Disallowed. All module resolution is static and locked at `npm ci`. |
 | Runtime inference     | Disallowed. Behaviour is fully declared in `manifest.toml` and `C`. |
@@ -147,29 +146,48 @@ schema_validation = "pre-execution"
 <img width="1440" height="2258" alt="image" src="https://github.com/user-attachments/assets/fd0a485e-957a-42da-b037-ce38fdf35429" />
 
 
-
 ## 8. Boundary 
 
-**Guarantees:**
-- `F(S_in, C, O)` is evaluated deterministically against a schema-validated input snapshot.
-- `S_out` satisfies `S_out := Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O))))` or is not emitted.
-- No filesystem state is modified during evaluation.
-- No runtime context (environment, time, dynamic resolution) influences output.
+### 1. Execution Guarantees
 
-**Forbids:**
-- Mutation of `S_in` or any filesystem path during evaluation.
-- Emission of `S_out` that does not pass `output.schema.json` validation.
-- Execution that proceeds past a schema validation failure.
-- Any output field not declared in `output.schema.json`.
-
-**Failure:**
-
-Failure means one of three conditions holds: `S_in` did not satisfy the input schema; `F` produced output that did not satisfy `output.schema.json`; or the cryptographic binding step could not be completed. In all three cases, the pipeline halts, no artefact is promoted to the Evidence layer, and `emit-failure.js` records the failing stage for upstream audit.
+| Principle              | Rule                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
+| Determinism            | `F(S_in, C, O)` is evaluated deterministically against a schema-validated input snapshot |
+| Cryptographic validity | `S_out` is only emitted if: `Verify(Sign_Ed25519(Hash_SHA256(F(S_in, C, O)))) == true`   |
+| Immutability           | No filesystem state is modified during evaluation                                        |
+| Context isolation      | No runtime factors (time, environment, dynamic resolution) affect output                 |
 
 
-**Assumptions:** 
 
-- Pipeline stage ordering (`needs: [orchestration-snapshot-emit]`) is inferred from `pipeline.binding.json`. Confirm the upstream stage name.
-- Layer names (Index, Schema, Orchestration, Instantiation, Evidence) are inferred from the v7 spec. Confirm these match your canonical IĀTŌ index labels.
-- `pipeline/sign-ed25519.js` is assumed to exist in the parent pipeline. If absent, the cryptographic binding step must be implemented.
-- `v7/schemas/` relocation from `v7/.schema.json` is a structural correction for `Schema-root` consistency. Confirm no other modules reference the flat path.
+### 2. Hard Constraints 
+
+| Area              | Constraint                                                           |
+| ----------------- | -------------------------------------------------------------------- |
+| Input integrity   | `S_in` must not be mutated; no filesystem path mutation allowed      |
+| Schema compliance | Output must fully conform to `output.schema.json`                    |
+| Execution control | Processing must halt immediately after any schema validation failure |
+| Output strictness | No undeclared fields beyond `output.schema.json` are permitted       |
+
+
+
+### 3. Failure Model
+
+| Failure Type          | Condition                                           |
+| --------------------- | --------------------------------------------------- |
+| Input schema failure  | `S_in` does not satisfy input schema                |
+| Output schema failure | `F` produces invalid `output.schema.json` structure |
+| Cryptographic failure | Signing or hashing verification cannot complete     |
+
+
+
+### 4. Failure Handling Pipeline
+
+| Stage           | Behavior                                                          |
+| --------------- | ----------------------------------------------------------------- |
+| Halt            | Pipeline stops immediately upon failure                           |
+| Promotion block | No artifact is promoted to Evidence layer                         |
+| Audit logging   | `emit-failure.js` records failing stage for upstream traceability |
+
+
+
+
