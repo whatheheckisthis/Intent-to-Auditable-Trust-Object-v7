@@ -1,41 +1,16 @@
-/-
-  SecurityLattice.lean
-  ARM Execution Correctness Architecture — Formal Security Lattice
+/-!
+`SecurityLattice.lean` — finite ARM exception-level lattice.
 
-  Defines the security level lattice over ARM execution privilege domains,
-  the information-flow ordering, and the non-interference relation used
-  by NonInterference.lean and ComplianceGalois.lean.
-
-  All proofs are complete; no proof placeholders are used.
-
-  Dependency: Mathlib.Order.Lattice (standard; re-proved here from first
-  principles so the file is self-contained for audit).
+The lattice is deliberately finite: all order facts reduce to the four ARM
+exception levels and can be discharged by case analysis.
 -/
 
-import Mathlib.Order.Lattice
-import Mathlib.Order.GaloisConnection
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Finset.Lattice.Basic
+import Mathlib.Tactic
 
-namespace ARMSecurity
+namespace IATO.V7
 
-/-──────────────────────────────────────────────────────────────────────────────
-  §1  Security Level Type
-
-  ARM privilege levels form a four-point chain:
-    EL0 < EL1 < EL2 < EL3
-
-  We model this as an ordered type.  The chain structure gives us the
-  lattice operations, and we prove the lattice axioms explicitly so that
-  downstream files can unfold them without relying on automation.
-──────────────────────────────────────────────────────────────────────────────-/
-
-/-- ARM execution privilege levels as an ordered enumeration. -/
-inductive SecurityLevel : Type where
-  | EL0 : SecurityLevel    -- unprivileged (user)
-  | EL1 : SecurityLevel    -- guest OS kernel
-  | EL2 : SecurityLevel    -- hypervisor (KVM)
-  | EL3 : SecurityLevel    -- secure monitor (EL3/TF-A)
+inductive SecurityLevel where
+  | EL0 | EL1 | EL2 | EL3
   deriving DecidableEq, Repr
 
 namespace SecurityLevel

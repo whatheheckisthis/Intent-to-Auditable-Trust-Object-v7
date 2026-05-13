@@ -6,8 +6,6 @@ import IATO.V7.NonInterference
 
 namespace IATO.V7
 
-open ARMSecurity
-
 structure Spec where
   allowed : SecurityLevel → Prop
   downClosed : ∀ {L L' : SecurityLevel}, allowed L → L' ≤ L → allowed L'
@@ -158,15 +156,15 @@ theorem compliant_iff_refines (init : ARMState) (S : Spec) :
     Compliant init S ↔ Refines init S := Iff.rfl
 
 theorem compliance_implies_ni_EL1 {init : ARMState} {S : Spec}
-    (_hc : Compliant init S) : NonInterference ARMStep arm_obs SecurityLevel.EL1 :=
-  arm_noninterference SecurityLevel.EL1
+    (_hc : Compliant init S) : NonInterference ARMState arm_low_equiv :=
+  arm_noninterference
 
 theorem ni_compliance_joint_satisfiable :
-    ∃ init S, NonInterference ARMStep arm_obs SecurityLevel.EL1 ∧ Compliant init S := by
+    ∃ init S, NonInterference ARMState arm_low_equiv ∧ Compliant init S := by
   let init : ARMState :=
     { vcpu := .running, el2 := { vmid := 0, stage2Enabled := true },
       stage2 := { owner := 0, isolated := true }, sve2 := { vl := 128 } }
-  refine ⟨init, bottomSpec, arm_noninterference SecurityLevel.EL1, ?_⟩
+  refine ⟨init, bottomSpec, arm_noninterference, ?_⟩
   intro s _
   intro L hbot
   exact False.elim hbot

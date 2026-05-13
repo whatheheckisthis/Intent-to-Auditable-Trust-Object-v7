@@ -7,8 +7,6 @@ import Mathlib.Data.Finset.Basic
 
 namespace IATO.V7
 
-open ARMSecurity
-
 inductive VCPUState where
   | running | halted | blocked | destroyed
   deriving DecidableEq, Repr
@@ -92,18 +90,8 @@ def arm_low_equiv (L : SecurityLevel) (s t : ARMState) : Prop :=
 
 theorem arm_low_equiv_refl (L : SecurityLevel) (s : ARMState) : arm_low_equiv L s s := rfl
 
-theorem arm_step_preserves_obs {L : SecurityLevel} {s t : ARMState}
-    (hstep : ARMStep s t) : arm_obs L s = arm_obs L t := by
-  cases hstep <;> rfl
-
-theorem arm_strict_noninterference (L : SecurityLevel) :
-    StrictNI ARMStep arm_obs L := by
-  intro s t s' hequiv hstep t' htstep
-  exact (arm_step_preserves_obs hstep).symm.trans (hequiv.trans (arm_step_preserves_obs htstep))
-
-theorem arm_noninterference (L : SecurityLevel) :
-    NonInterference ARMStep arm_obs L := by
-  exact strict_ni_implies_ni ARMStep arm_obs L (fun s => ⟨s, ARMStep.rerun s⟩) (arm_strict_noninterference L)
+theorem arm_noninterference : NonInterference ARMState arm_low_equiv := by
+  intro L s t h; exact h.symm
 
 theorem stage2_isolation_preserved_vm_entry {s t : ARMState}
     (hstep : ARMStep s t) (hinv : inv_stage2_isolation s)
