@@ -2,14 +2,6 @@
 project = "IATO-V7"
 release = "0.7.0"
 
-
-[lean]
-toolchain_file = "lean-toolchain"
-lakefile = "lakefile.lean"
-install_script = "scripts/install_lake.sh"
-build_script = "scripts/build_lake.sh"
-canonical_build = "./scripts/build_lake.sh"
-
 [nmap]
 binary = "nmap"
 target = "127.0.0.1"
@@ -35,16 +27,12 @@ path = "lakefile.toml"
 permissions = "rw-r--r--"
 
 [[nse.rules]]
-path = "lean/iato_v7/scripts/env.sh"
-permissions = "rwxr-xr-x"
+path = "lean/iato_v7/lakefile.lean"
+permissions = "rw-r--r--"
 
 [[nse.rules]]
-path = "lean/iato_v7/scripts/install_lake.sh"
-permissions = "rwxr-xr-x"
-
-[[nse.rules]]
-path = "lean/iato_v7/scripts/build_lake.sh"
-permissions = "rwxr-xr-x"
+path = "lean/iato_v7/lean-toolchain"
+permissions = "rw-r--r--"
 
 [schema]
 expected_version = "1.0.0"
