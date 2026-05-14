@@ -1,0 +1,27 @@
+name: lake-ci
+
+on:
+  push:
+    paths:
+      - 'lean/iato_v7/**'
+      - 'lakefile.toml'
+      - 'config.toml'
+  pull_request:
+    paths:
+      - 'lean/iato_v7/**'
+      - 'lakefile.toml'
+      - 'config.toml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lean/iato_v7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean/iato_v7
+      - name: Lake build and test
+        run: ./scripts/build_lake.sh --no-update

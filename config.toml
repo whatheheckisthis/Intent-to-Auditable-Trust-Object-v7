@@ -7,6 +7,15 @@ root_path = "/workspace/Intent-to-Auditable-Trust-Object-v7"
 target = "127.0.0.1"
 fail_on_deviation = true
 
+
+[lean]
+package_dir = "lean/iato_v7"
+toolchain_file = "lean/iato_v7/lean-toolchain"
+lakefile = "lean/iato_v7/lakefile.lean"
+install_script = "lean/iato_v7/scripts/install_lake.sh"
+build_script = "lean/iato_v7/scripts/build_lake.sh"
+canonical_build = "cd lean/iato_v7 && ./scripts/build_lake.sh"
+
 [artifacts]
 xml_output = "lean/iato_v7/nmap-path-state.xml"
 policy_output = "lean/iato_v7/.nmap-path-policy.json"
@@ -22,8 +31,26 @@ group = "0"
 mode = "0644"
 
 [[targets]]
-id = "orchestrator-script"
-path = "lean/iato_v7/scripts/nmap_path_audit_orchestrator.py"
+id = "lean-env"
+path = "lean/iato_v7/scripts/env.sh"
+required = true
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+owner = "0"
+group = "0"
+mode = "0755"
+
+[[targets]]
+id = "lake-installer"
+path = "lean/iato_v7/scripts/install_lake.sh"
+required = true
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+owner = "0"
+group = "0"
+mode = "0755"
+
+[[targets]]
+id = "lake-build"
+path = "lean/iato_v7/scripts/build_lake.sh"
 required = true
 sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
 owner = "0"

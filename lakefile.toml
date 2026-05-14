@@ -76,9 +76,9 @@ rev = "master"
 # Note: this table is for maintainers; run these via shell, not `lake script`.
 # ────────────────────────────────────────────────
 [scripts]
-scan_workers = "python3 scripts/scan_workers.py data/legacy_workers.csv"
-build_evidence = "./scripts/lake_build.sh"
-migrate_example = "./scripts/migrate.sh"
+install_lake = "lean/iato_v7/scripts/install_lake.sh"
+build_evidence = "lean/iato_v7/scripts/build_lake.sh"
+build_no_update = "lean/iato_v7/scripts/build_lake.sh --no-update"
 
 # ────────────────────────────────────────────────
 # Advanced / optional examples
@@ -100,14 +100,21 @@ nse_script = "lean/iato_v7/nse/path_audit.nse"
 
 [[tool.iato_nmap.path_rules]]
 path = "lakefile.toml"
-size = 3725
+size = 5059
 sha256 = "replace-with-canonical-digest"
 uid = 1000
 gid = 1000
 permissions = "rw-r--r--"
 
 [[tool.iato_nmap.path_rules]]
-path = "lean/iato_v7/run-ci-proxy.sh"
+path = "lean/iato_v7/scripts/install_lake.sh"
+sha256 = "replace-with-canonical-digest"
+uid = 1000
+gid = 1000
+permissions = "rwxr-xr-x"
+
+[[tool.iato_nmap.path_rules]]
+path = "lean/iato_v7/scripts/build_lake.sh"
 sha256 = "replace-with-canonical-digest"
 uid = 1000
 gid = 1000

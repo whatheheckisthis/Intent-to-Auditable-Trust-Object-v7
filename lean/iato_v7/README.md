@@ -2,43 +2,56 @@
 
 ## Install Lean/Lake locally
 
-Use the helper script:
+Use the helper script from this package directory:
 
 ```bash
 ./scripts/install_lake.sh
 ```
 
 It attempts:
-1. Reuse existing `lake` if installed.
-2. Install `elan` from GitHub release.
-3. Fallback to `apt-get install elan`.
-4. Install Lean stable toolchain and verify `lean`/`lake`.
+1. Reuse existing `lean`/`lake` if already installed.
+2. Install `elan` from the official Lean/Elan release endpoints.
+3. Fallback to `apt-get install elan` when a distribution package is available.
+4. Install the exact toolchain declared in `lean-toolchain` and verify `lean`/`lake`.
 
 ## Build and test
 
+The canonical local invocation is:
+
 ```bash
+./scripts/build_lake.sh
+```
+
+For CI or already-prepared environments, the script expands to:
+
+```bash
+source scripts/env.sh
 lake update
 lake build
 lake test
-lake exe cache
-lake aot
 ```
 
+Optional flags:
+- `./scripts/build_lake.sh --no-update` skips dependency refresh.
+- `./scripts/build_lake.sh --no-test` skips the Lake `test` script.
+- `./scripts/build_lake.sh <target>` builds specific Lake targets.
 
 ## Build environment variables
 
-Before building, load the environment helper:
+Before invoking `lake` directly, load the environment helper:
 
 ```bash
 source scripts/env.sh
 ```
 
 This exports:
-- `ELAN_HOME` and prepends `$ELAN_HOME/bin` to `PATH`
-- `LAKE` pointing to the elan-managed `lake` binary
-- `LEAN_ABORT_ON_PANIC=1` for fail-fast behavior
-- `LEAN_PATH` defaulting to the local `.lake/packages`
-- `LAKE_NO_CACHE=0` (cache enabled)
+- `IATO_V7_REPO_ROOT` and `IATO_V7_LEAN_DIR` for deterministic path resolution.
+- `IATO_V7_TOOLCHAIN` from `lean-toolchain`.
+- `ELAN_HOME` and prepends `$ELAN_HOME/bin` to `PATH`.
+- `LEAN` and `LAKE` pointing to the elan-managed binaries.
+- `LEAN_ABORT_ON_PANIC=1` for fail-fast behavior.
+- `LEAN_PATH` defaulting to the local `.lake/packages`.
+- `LAKE_NO_CACHE=0` (cache enabled).
 
 
 ## Install Git GUI
