@@ -25,7 +25,7 @@ def rank : SecurityLevel → ℕ
 /-- `rank` is injective. -/
 theorem rank_injective : Function.Injective rank := by
   intro a b h
-  cases a <;> cases b <;> simp [rank] at h <;> rfl
+  cases a <;> cases b <;> simpa [rank] using h
 
 /-──────────────────────────────────────────────────────────
   §1.1  Ordering
@@ -167,12 +167,36 @@ theorem EL1_lt_EL3 : EL1 < EL3 := by simp
 theorem EL1_not_above_EL2 : ¬(EL2 ≤ EL1) := by simp
 theorem EL1_not_above_EL3 : ¬(EL3 ≤ EL1) := by simp
 
+/-──────────────────────────────────────────────────────────
+  §1.5  Level characterisation lemmas
+──────────────────────────────────────────────────────────-/
+
+/-- Levels below or equal to EL0 are exactly EL0. -/
+theorem le_EL0_iff (L : SecurityLevel) : L ≤ EL0 ↔ L = EL0 := by
+  cases L <;> simp [le_def, rank]
+
 /-- Levels below or equal to EL1 are exactly EL0 and EL1. -/
-theorem le_EL1_iff (L : SecurityLevel) : L ≤ SecurityLevel.EL1 ↔ L = EL0 ∨ L = EL1 := by
-  constructor
-  · intro h
-    cases L <;> simp at h ⊢
-  · rintro (rfl | rfl) <;> simp
+theorem le_EL1_iff (L : SecurityLevel) : L ≤ EL1 ↔ L = EL0 ∨ L = EL1 := by
+  cases L <;> simp [le_def, rank]
+
+/-- Levels below or equal to EL2 are exactly EL0, EL1, and EL2. -/
+theorem le_EL2_iff (L : SecurityLevel) :
+    L ≤ EL2 ↔ L = EL0 ∨ L = EL1 ∨ L = EL2 := by
+  cases L <;> simp [le_def, rank]
+
+/-- Levels below or equal to EL3 are all levels. -/
+theorem le_EL3_iff (L : SecurityLevel) :
+    L ≤ EL3 ↔ L = EL0 ∨ L = EL1 ∨ L = EL2 ∨ L = EL3 := by
+  cases L <;> simp [le_def, rank]
+
+/-- Levels above or equal to EL2 are EL2 and EL3. -/
+theorem EL2_le_iff (L : SecurityLevel) : EL2 ≤ L ↔ L = EL2 ∨ L = EL3 := by
+  cases L <;> simp [le_def, rank]
+
+/-- Levels above or equal to EL1 are EL1, EL2, and EL3. -/
+theorem EL1_le_iff (L : SecurityLevel) :
+    EL1 ≤ L ↔ L = EL1 ∨ L = EL2 ∨ L = EL3 := by
+  cases L <;> simp [le_def, rank]
 
 end SecurityLevel
 
@@ -201,11 +225,7 @@ theorem no_downgrade {H L : SecurityLevel} (hHL : H > L) : ¬flows_to H L := by
   intro h
   have hLH : L ≤ H := Nat.le_of_lt hHL
   have hEq : H = L := SecurityLevel.le_antisymm h hLH
-  have hNe : H ≠ L := by
-    intro hEq'
-    rw [hEq'] at hHL
-    exact Nat.lt_irrefl _ hHL
-  exact hNe hEq
+  exact (ne_of_gt hHL) hEq
 
 /-- `flows_to EL1 EL2`: guest OS data may flow upward to hypervisor. -/
 theorem guest_to_hypervisor : flows_to SecurityLevel.EL1 SecurityLevel.EL2 :=
@@ -411,4 +431,4 @@ open SecurityLevel
 
 end JoinMeetFacts
 
-end ARMSecurity
+end IATO.V7
