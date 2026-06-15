@@ -52,7 +52,7 @@ ARM DDI0608A     ARMv9-A Architecture Supplement
 
 **`HCR_EL2` field table.** All six entries (`VM`, `RW`, `TSC`, `TWI`/`TWE`, `TGE`, `VSE`) are present in `HCR_EL2` per DDI0487K. Constraint descriptions conform to specification.
 
-**EL2 save/restore register list.** `HCR_EL2`, `VTTBR_EL2`, `VTCR_EL2`, `SCTLR_EL2`, `TCR_EL2`, `MAIR_EL2`, `SPSR_EL2`, `ELR_EL2`, `SP_EL2`, `DAIF` are all EL2-owned in a non-VHE hypervisor configuration. List conforms to specification.
+**EL2 save/restore register list.** `HCR_EL2`, `VTTBR_EL2`, `VTCR_EL2`, `SCTLR_EL2`, `TCR_EL2`, `MAIR_EL2`, `SPSR_EL2`, `ELR_EL2`, `SP_EL2`, `DAIF` are all EL2 owned in a non-VHE hypervisor configuration. List conforms to specification.
 
 **DAIF atomicity.** DAIF interrupt mask bits must be coherent across EL2→EL1 transitions. Partial restoration constitutes architecturally undefined behaviour. Constraint conforms to specification.
 
@@ -231,8 +231,14 @@ Invariant `I₄` (`VL invariant ∀ t ≥ t_configured`) must read `t_finalized`
 | §7 Azure Cobalt | Non-conformant | F-1 |
 | §8 Correctness Model | Conforms with notation | I₄ per F-2 |
 
-No structural errors identified in the theoretical framework (§8), Stage-2 isolation model (§2), or side-channel threat model (§6). The observational quotient framing in the companion `obs-equiv` writeup maps directly onto the microarchitectural correctness boundary defined in §6 and §8. That relationship is confirmed consistent across both documents.
+No structural errors identified in the theoretical framework (§8), Stage-2 isolation model (§2), or side-channel threat model (§6). The observational quotient framing in the companion `obs-equiv` writeup maps directly onto the microarchitectural correctness boundary defined in §6 and §8. That relationship is confirmed to be consistent across both documents.
 
 ---
 
-*This repository contains no application-layer code, no cloud product integration, and no DevOps tooling. All artefacts are systems-level execution correctness artefacts targeting ARM EL2 hypervisor behaviour, Stage-2 MMU semantics, SVE2 register-file correctness, and QEMU architectural projection on Azure Cobalt-class Neoverse infrastructure.*
+## Scope and Exclusion of Liability
+
+
+**This repository and all artefacts contained herein pertain exclusively to systems, correctness verification targeting ARM Exception Level 2 hypervisor behaviour, Stage-2 MMU address translation semantics, SVE2 register file state integrity, and QEMU architectural projection on Azure Cobalt Neoverse infrastructure. No artefact, commit, or derivative work within this repository constitutes, incorporates, or implies application software, web stack implementation (including but not limited to MERN pattern frameworks or CRUD operational patterns), cloud product integration, or DevOps pipeline tooling of any kind. Any interpretation of the contents herein as general purpose software, infrastructure automation, or cloud native tooling is expressly outside the intended and declared scope of this work.**
+
+>The maintainer makes no representation, warranty, or assurance that the artefacts contained herein are fit for any purpose other than the formal verification of low level architectural correctness as defined above. Unauthorised rescoping, misclassification, or misattribution of this repository's contents in any technical, contractual, or procurement context is neither sanctioned nor endorsed by the maintainer. All rights in and to the artefacts herein are reserved, and nothing in this repository shall be construed as granting any licence, right, or authority beyond the explicitly declared scope of systems level correctness assurance.*
+
