@@ -233,12 +233,3 @@ Invariant `I₄` (`VL invariant ∀ t ≥ t_configured`) must read `t_finalized`
 
 No structural errors identified in the theoretical framework (§8), Stage-2 isolation model (§2), or side-channel threat model (§6). The observational quotient framing in the companion `obs-equiv` writeup maps directly onto the microarchitectural correctness boundary defined in §6 and §8. That relationship is confirmed to be consistent across both documents.
 
----
-
-## Scope and Exclusion of Liability
-
-
-**This repository and all artefacts contained herein pertain exclusively to systems, correctness verification targeting ARM Exception Level 2 hypervisor behaviour, Stage-2 MMU address translation semantics, SVE2 register file state integrity, and QEMU architectural projection on Azure Cobalt Neoverse infrastructure. No artefact, commit, or derivative work within this repository constitutes, incorporates, or implies application software, web stack implementation (including but not limited to MERN pattern frameworks or CRUD operational patterns), cloud product integration, or DevOps pipeline tooling of any kind. Any interpretation of the contents herein as general purpose software, infrastructure automation, or cloud native tooling is expressly outside the intended and declared scope of this work.**
-
->The maintainer makes no representation, warranty, or assurance that the artefacts contained herein are fit for any purpose other than the formal verification of low level architectural correctness as defined above. Unauthorised rescoping, misclassification, or misattribution of this repository's contents in any technical, contractual, or procurement context is neither sanctioned nor endorsed by the maintainer. All rights in and to the artefacts herein are reserved, and nothing in this repository shall be construed as granting any licence, right, or authority beyond the explicitly declared scope of systems level correctness assurance.
-
